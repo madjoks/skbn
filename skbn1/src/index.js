@@ -4,7 +4,16 @@ import canonize from './canonize'
 
 
 
-const app = express()
+const app = express();
+
+app.get('/task2a', function (req, res) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  const a = parseInt(req.query.a) || 0;
+  const b = parseInt(req.query.b) || 0;
+
+  res.send('' + (a + b));
+})
 
 app.get('/task2c', function (req, res) {
   res.header("Access-Control-Allow-Origin", "*");
