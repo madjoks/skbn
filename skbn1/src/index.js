@@ -1,10 +1,13 @@
 import express from 'express'
 import fetch from 'isomorphic-fetch'
+import cors from 'cors'
+
 import canonize from './canonize'
 
 
 
 const app = express()
+app.use(cors());
 
 app.get('/task2a', function (req, res) {
   const a = parseInt(req.query.a) || 0;
@@ -17,15 +20,21 @@ app.get('/task2b', function (req, res) {
   const fullname = req.query.fullname;
   if (!fullname)
     res.send('Invalid fullname');
-    
+  if (/\d+|_|\\|\/|\./g.exec(fullname))
+    res.send('Invalid fullname');
+
   let fio = fullname.split(' ');
+  fio = fio.filter(function(str) {
+    return /\S/.test(str);
+  });
   const fio_length = fio.length;
   if (fio_length>3 || fio_length<1)
     res.send('Invalid fullname');
 
-  let result = fio[fio_length-1];
+  let result = fio[fio_length-1].toLowerCase();
+  result = result.charAt(0).toUpperCase() + result.slice(1);
   fio.slice(0, fio_length-1).forEach((item)=>{
-    result += ' ' + item[0] + '.';
+    result += ' ' + item[0].toUpperCase() + '.';
   });
   res.send(result);
 })
