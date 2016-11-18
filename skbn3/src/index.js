@@ -22,113 +22,41 @@ app.get('/task3a/volumes', async (req, res) => {
   });
 
   for(var index in result) {
-    result[index] = result[index]+'B'; 
+    result[index] = result[index]+'B';
   }
   return res.json(result);
 });
 
-app.get('/task3a/ram', async (req, res) => {
+app.get('/task3a/*', async (req, res) => {
 
   var items =  await getPCItmes();
-  return res.json(items.ram);
-});
+  var result = items;
+  var path_steps = req.params[0].split('/');
+  
+  path_steps.forEach(function (item)
+  {
+      if(item=='' || result==undefined)
+        return;
 
-app.get('/task3a/os', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.os);
-});
-
-app.get('/task3a/floppy', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.floppy);
-});
-
-app.get('/task3a/hdd', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.hdd);
-});
-
-app.get('/task3a/board/vendor', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.board.vendor);
-});
-
-app.get('/task3a/board/model', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.board.model);
-});
-
-
-app.get('/task3a/board/cpu', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.board.cpu);
-});
-
-app.get('/task3a/board/cpu/model', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.board.cpu.model);
-});
-
-app.get('/task3a/board/cpu/hz', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.board.cpu.hz);
-});
-
-app.get('/task3a/board/image', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.board.image);
-});
-
-app.get('/task3a/board/video', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.board.video);
-});
-
-app.get('/task3a/board', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.board);
-});
-
-app.get('/task3a/ram/vendor', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.ram.vendor);
-});
-
-app.get('/task3a/ram/volume', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.ram.volume);
-});
-
-app.get('/task3a/ram/pins', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.json(items.ram.pins);
-});
-
-app.get('/task3a/ram/someField', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.status(404).send('Not Found');
-});
-
-app.get('/task3a/monitor', async (req, res) => {
-
-  var items =  await getPCItmes();
-  return res.send(''+items.monitor);
-});
+      if(typeof result =='string'){
+        result = undefined;
+        return;
+      };
+      if (result!=undefined){
+          if (Array.isArray(result) && isNaN(item)){
+              result=undefined;
+          }
+          else {
+              result = result[item];
+          }
+      }
+  })
+  if (typeof result == "undefined") res.status(404).send('Not Found');
+  if (result == null) return res.send(result+'');
+  if (typeof result !== "object") return res.json(result);
+  if (Object.keys(result).length>0) return res.json(result);
+  res.status(404).send('Not Found');
+})
 
 app.listen(3000, () => {
   console.log('Your app listening on port 3000!');

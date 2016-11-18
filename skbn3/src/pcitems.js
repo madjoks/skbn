@@ -5,7 +5,6 @@ export default async function getPCItmes(){
     let pc = {};
     var response = await fetch(pcUrl);
     pc = await response.json();
-    console.log(pc);
 
     return pc;
 };
