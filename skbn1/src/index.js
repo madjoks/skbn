@@ -3,7 +3,7 @@ import fetch from 'isomorphic-fetch'
 import cors from 'cors'
 
 import canonize from './canonize'
-
+import getHexRGBColor from './color'
 
 
 const app = express()
@@ -48,22 +48,10 @@ app.get('/task2c', function (req, res) {
 
 app.get('/task2d', function (req, res) {
   let color = req.query.color || '';
-  color = color.replace(/\s/g, "");
-  let color_length = color.length;
-  console.log(color_length);
-  console.log(color);
-  if (color_length==3){
-      color = Array(3).join(color[0]) + Array(3).join(color[1]) + Array(3).join(color[2]);
-  }
-  if (color_length>3 && color_length<6){
-      color = color + Array(7-color_length).join(color[color_length-1]);
-  }
-  console.log(color);
-  var is_color = /^#?[0-9A-F]{6}$/i.test(color);
-  if (is_color)
-    res.send( '#' + color.toLowerCase());
-
-  res.status(400).send('Invalid color');
+  color = getHexRGBColor(color);
+  if (color.length!=6)
+    return res.status(400).send('Invalid color');
+  return res.send('#' + color.toLowerCase());
 })
 
 app.listen(3000, function () {
