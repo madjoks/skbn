@@ -3,6 +3,9 @@ import cors from 'cors';
 import fetch from 'isomorphic-fetch'
 import getPCItmes from './pcitems';
 import _ from 'lodash';
+import fs from 'fs';
+import getPokemons from './pokemons.js';
+import getPokemon from './pokemons.js';
 
 
 const app = express();
@@ -14,6 +17,31 @@ var pets_data;
 fetch('https://gist.githubusercontent.com/isuvorov/55f38b82ce263836dadc0503845db4da/raw/pets.json')
   .then(async (res) => {
     pets_data = await res.json();
+});
+
+app.get('/pokemons', async(req, res)=>{
+  const baseUrl = 'https://pokeapi.co/api/v2';
+  try {
+    const pokemonsUrl = `${baseUrl}/pokemon`;
+    const pokemonsInfo = await getPokemons(pokemonsUrl);
+    const pokemonsPromises = pokemonsInfo.map(info => {
+      return getPokemon(info.url);
+    });
+
+    const pokemonsFulls = await Promise.all(pokemonsPromises);
+    const pokemons = pokemonsFulls.map(pokemon => {
+      return _.pick(pokemon, pokemonFields);
+    });
+
+    const sortPokemons = _.sortBy(pokemons, pokemon => pokemon.weight);
+
+    return res.json(sortPokemons);
+
+  } catch (err) {
+
+    console.log(err);
+    return res.json({ err });
+  }
 });
 
 app.get('/task3a', async (req, res) => {
@@ -127,7 +155,6 @@ function notFound(res) {
 
   app.get('/task3b/users/populate', (req, res) => {
     let users = pets_data.users.slice();
-    console.log(users);
     return res.json(populateUsers(users, req));
   });
 
@@ -157,19 +184,16 @@ function notFound(res) {
   app.get('/task3b/users/:id/populate', (req, res) => {
     const p = req.params;
     const re = /[\d]+/;
-    console.log('Yo!', p);
 
     if (p.id) {
       let users = pets_data.users.slice();
       if (re.test(p.id)) {
           users = users.filter(item => item.id == p.id);
-          console.log('id', users);
         if (users.length>0) {
           return res.json(populateUsers(users, req)[0]);
         }
       } else {
           users = users.filter(item => item.username == p.id);
-          console.log('username', users);
         if (users.length>0) {
           return res.json(populateUsers(users, req)[0]);
         }
@@ -182,7 +206,6 @@ function notFound(res) {
   app.get('/task3b/users/:id/pets', (req, res) => {
     const p = req.params;
 
-    console.log(p);
     if (p.id) {
       if (Number.isInteger(p.id)) {
         return sendPetsByUserId(p.id, res)
@@ -234,7 +257,7 @@ function notFound(res) {
   app.get('/task3b/pets/:id', (req, res) => {
     const p = req.params;
     let pets = pets_data.pets.slice().filter(pet => pet.id == p.id);
-    console.log(p.id, pets);
+
     if (pets.length > 0) {
       return res.json(pets[0]);
     }
@@ -248,15 +271,52 @@ function notFound(res) {
     const users = pets_data.users.slice();
     if (pet) {
       const petUser = users.filter( user => pet.userId === user.id )[0];
-      console.log(petUser);
+
       if (petUser) {
         pet.user = petUser;
-        console.log(pet);
       }
       return res.json(pet);
     }
     return notFound(res);
   });
+
+  app.get('/task3C/:metric?', (req, res) => {
+    const fname = "src/pokemons.json";
+    const metric = req.params.metric || "default";
+    let limit = +req.query.limit || 20;
+    let offset = +req.query.offset || 0;
+
+    const defSort = (a,b) => {
+      if (a.name > b.name) return 1;
+      else if (a.name < b.name) return -1;
+      else return 0;
+    };
+
+    const makeSort = (func, desc=false) => (a,b) => {
+     let result = (func(a)-func(b)) * (desc ? 1 : -1);
+     if (result == 0) result = defSort(a, b);
+     return result;
+    }
+
+
+    const sorts = {
+      "default": defSort,
+      "fat": makeSort((pokemon) => (pokemon.weight / pokemon.height)),
+      "angular": makeSort((pokemon) => (pokemon.weight / pokemon.height), true),
+      "heavy": makeSort((pokemon) => pokemon.weight),
+      "light": makeSort((pokemon) => pokemon.weight, true),
+      "huge": makeSort((pokemon) => pokemon.height),
+      "micro": makeSort((pokemon) => pokemon.height, true)
+    };
+
+    let data = JSON.parse(fs.readFileSync(fname));
+
+    data.sort(sorts[metric]);
+    console.log(data[0]);
+    data = data.map((pokemon) => pokemon.name);
+
+    res.json(data.slice(offset, offset+limit));
+  })
 
 app.listen(3000, () => {
   console.log('Your app listening on port 3000!');
